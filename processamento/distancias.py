@@ -69,3 +69,32 @@ def ordenar_por_distancia(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
 
     return gdf.sort_values("distancia").reset_index(drop=True)
+
+def filtrar_por_raio(
+        gdf: gpd.GeoDataFrame,
+        raio: float
+) -> gpd.GeoDataFrame:
+    """
+    Retorna apenas os objetos localizados dentro de um
+    determinado raio.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        Deve possuir a coluna 'distancia'.
+
+    raio : float
+        Distância máxima (em metros).
+
+    Returns
+    -------
+    GeoDataFrame
+        Novo GeoDataFrame contendo apenas os objetos cuja
+        distância é menor ou igual ao raio informado.
+    """
+
+    return (
+        gdf[gdf["distancia"] <= raio]
+        .copy()
+        .reset_index(drop=True)
+    )
