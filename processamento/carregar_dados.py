@@ -1,104 +1,134 @@
 """
-Módulo responsável pelo carregamento de arquivos geográficos do projeto.
+Módulo responsável pelo carregamento dos dados geográficos.
 
-Todas as funções deste módulo retornam GeoDataFrames prontos para uso.
-Nenhum processamento geográfico é realizado aqui.
+Este módulo NÃO conhece hospitais, escolas ou qualquer outro tipo de
+informação. Ele apenas localiza todos os arquivos .gpkg presentes na
+pasta 'dados', carrega cada um deles e os disponibiliza em um
+dicionário.
+
+Cada chave do dicionário corresponde ao nome do arquivo (sem extensão),
+e o valor é um GeoDataFrame.
 """
 
 from pathlib import Path
-
 import geopandas as gpd
 
-
-# -------------------------------------------------------------------
+# ==========================================================
 # Caminhos do projeto
-# -------------------------------------------------------------------
+# ==========================================================
 
 PASTA_DADOS = Path(__file__).resolve().parent.parent / "dados"
 
 
-# -------------------------------------------------------------------
-# Funções
-# -------------------------------------------------------------------
+# ==========================================================
+# Funções internas
+# ==========================================================
 
 def listar_arquivos():
     """
-    Retorna todos os arquivos .gpkg presentes na pasta de dados.
-
-    Returns
-    -------
-    list[Path]
-        Lista contendo os caminhos dos arquivos.
+    Retorna todos os arquivos .gpkg presentes na pasta dados.
     """
 
     return sorted(PASTA_DADOS.glob("*.gpkg"))
 
 
-def carregar_gpkg(nome_arquivo):
+def carregar_gpkg(caminho):
     """
-    Carrega um GeoPackage da pasta dados.
+    Carrega um único arquivo GeoPackage.
 
     Parameters
     ----------
-    nome_arquivo : str
-        Nome do arquivo (ex.: hospitais.gpkg)
+    caminho : Path
 
     Returns
     -------
     GeoDataFrame
     """
 
-    caminho = PASTA_DADOS / nome_arquivo
-
-    if not caminho.exists():
-        raise FileNotFoundError(
-            f"Arquivo não encontrado:\n{caminho}"
-        )
-
     return gpd.read_file(caminho)
 
 
+# ==========================================================
+# Função principal
+# ==========================================================
+
+def carregar_todos():
+    """
+    Carrega automaticamente todos os GeoPackages presentes
+    na pasta 'dados'.
+
+    Returns
+    -------
+    dict
+
+    Exemplo:
+
+    {
+        "hospitais": GeoDataFrame,
+        "upas_ubs": GeoDataFrame,
+        "escolas": GeoDataFrame
+    }
+    """
+
+    dados = {}
+
+    arquivos = listar_arquivos()
+
+    for arquivo in arquivos:
+
+        nome = arquivo.stem.lower()
+
+        dados[nome] = carregar_gpkg(arquivo)
+
+    return dados
+
+
+# ==========================================================
+# Funções auxiliares
+# ==========================================================
+
 def resumo(gdf):
     """
-    Exibe um pequeno resumo do GeoDataFrame.
+    Exibe um resumo de um GeoDataFrame.
     """
 
-    print("=" * 60)
-
     print(f"Registros : {len(gdf)}")
-
     print(f"CRS       : {gdf.crs}")
 
-    print(f"Geometrias:")
+    print("\nTipos de geometria:")
 
     print(gdf.geom_type.value_counts())
 
     print("\nColunas:")
 
     for coluna in gdf.columns:
-        print(f"  • {coluna}")
-
-    print("=" * 60)
+        print(f" - {coluna}")
 
 
-# -------------------------------------------------------------------
+def resumo_geral(dados):
+    """
+    Exibe um resumo de todas as camadas carregadas.
+    """
+
+    print("=" * 70)
+    print("CAMADAS CARREGADAS")
+    print("=" * 70)
+
+    for nome, gdf in dados.items():
+
+        print(f"\nCamada: {nome}")
+
+        resumo(gdf)
+
+        print("-" * 70)
+
+
+# ==========================================================
 # Teste do módulo
-# -------------------------------------------------------------------
+# ==========================================================
 
 if __name__ == "__main__":
 
-    print("\nArquivos encontrados:\n")
+    dados = carregar_todos()
 
-    arquivos = listar_arquivos()
-
-    for arquivo in arquivos:
-
-        print(f" - {arquivo.name}")
-
-    if arquivos:
-
-        print("\nAbrindo primeiro arquivo apenas como teste...\n")
-
-        gdf = carregar_gpkg(arquivos[0].name)
-
-        resumo(gdf)
+    resumo_geral(dados)
