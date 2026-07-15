@@ -50,7 +50,7 @@ for nome, gdf in dados.items():
 
     # Distâncias
     gdf = calcular_distancias(gdf, ponto)
-
+ 
     #Filtra por raio de 1000 metros
     gdf = filtrar_por_raio(gdf, RAIO)
 
