@@ -11,7 +11,8 @@ from processamento.distancias import (
 from processamento.pontuacao import (
     calcular_pontuacao,
     pontuacao_total,
-    pontuacao_media
+    pontuacao_media,
+    calcular_todos_os_perfis
 )
 
 # ==========================================================
@@ -40,7 +41,7 @@ print("=" * 70)
 
 for nome, gdf in dados.items():
 
-    RAIO = 1000  # metros
+    RAIO = 3000  # metros
 
     print(f"\nCamada: {nome}")
     print("-" * 70)
@@ -50,12 +51,16 @@ for nome, gdf in dados.items():
 
     # Distâncias
     gdf = calcular_distancias(gdf, ponto)
+    print(gdf.columns)
  
     #Filtra por raio de 1000 metros
     gdf = filtrar_por_raio(gdf, RAIO)
 
     # Pontuações
     gdf = calcular_pontuacao(gdf)
+
+    print(nome)
+    print(gdf.columns)
 
     print(f"Quantidade de locais : {len(gdf)}")
     print(f"Menor distância      : {menor_distancia(gdf):.2f} m")
@@ -64,10 +69,10 @@ for nome, gdf in dados.items():
 
     print()
 
-    print(f"Pontuação total      : {pontuacao_total(gdf):.4f}")
-    print(f"Pontuação média      : {pontuacao_media(gdf):.4f}")
+    print(f"Pontuação total      : {pontuacao_total(gdf):.2f}")
+    print(f"Pontuação média      : {pontuacao_media(gdf):.2f}")
 
-    print("\nlocais mais próximos (até 1000 m de distância):")
+    print(f"\nlocais mais próximos (até {RAIO} m de distância):")
 
     proximos = ordenar_por_distancia(gdf).head(5)
 
