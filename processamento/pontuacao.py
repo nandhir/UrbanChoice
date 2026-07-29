@@ -27,14 +27,14 @@ PERFIS = {
         "terminais-onibus": 0.02,
     },
     "universitarios": {
-        "pontos-onibus-mun-intermun": 0.25,
-        "terminais-onibus": 0.20,
-        "estacoes-trem": 0.20,
-        "atencao_basica_upa_ubs": 0.10,
-        "parques-municipais": 0.10,
-        "hospitais": 0.05,
-        "educacao": 0.05,
-        "pracas-areas-verdes": 0.05,
+        "pontos-onibus-mun-intermun": 0.16,
+        "terminais-onibus": 0.13,
+        "estacoes-trem": 0.21,
+        "atencao_basica_upa_ubs": 0.12,
+        "parques-municipais": 0.13,
+        "hospitais": 0.10,
+        "educacao": 0.07,
+        "pracas-areas-verdes": 0.08,
     },
 }
 
