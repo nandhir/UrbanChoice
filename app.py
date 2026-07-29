@@ -1,91 +1,70 @@
 from processamento.carregar_dados import carregar_todos
-from processamento.geometrias import criar_ponto, converter_multipoint
 from processamento.distancias import (
     calcular_distancias,
-    filtrar_por_raio,
-    menor_distancia,
-    maior_distancia,
     distancia_media,
-    ordenar_por_distancia
+    filtrar_por_raio,
+    maior_distancia,
+    menor_distancia,
+    ordenar_por_distancia,
 )
+from processamento.geometrias import converter_multipoint, criar_ponto
 from processamento.pontuacao import (
     calcular_pontuacao,
-    pontuacao_total,
+    calcular_todos_os_perfis,
     pontuacao_media,
-    calcular_todos_os_perfis
+    pontuacao_total,
 )
 
-# ==========================================================
-# Carrega todos os dados
-# ==========================================================
-
+# 1. Carrega todos os dados
 dados = carregar_todos()
 
-# ==========================================================
-# Ponto de teste
-# (coordenada do primeiro hospital)
-# ==========================================================
+# 2. Ponto de teste (coordenada em Santo André / SIRGAS 2000 UTM 23S)
+ponto = criar_ponto(344217.996363955, 7381964.36198292)
 
-ponto = criar_ponto(
-    344217.996363955,
-    7381964.36198292
-)
+RAIO = 3000  # Raio de busca em metros
+pontuacoes_por_camada = {}
 
 print("=" * 70)
-print("TESTE DO PROTÓTIPO")
+print("PROCESSAMENTO DAS CAMADAS")
 print("=" * 70)
 
-# ==========================================================
-# Testa cada camada
-# ==========================================================
-
+# 3. Processa e pontua cada camada
 for nome, gdf in dados.items():
-
-    RAIO = 3000  # metros
-
     print(f"\nCamada: {nome}")
     print("-" * 70)
 
-    # Converte MultiPoint -> Point
+    # Tratamento geométrico e distância
     gdf = converter_multipoint(gdf)
-
-    # Distâncias
     gdf = calcular_distancias(gdf, ponto)
-    print(gdf.columns)
- 
-    #Filtra por raio de 1000 metros
     gdf = filtrar_por_raio(gdf, RAIO)
-
-    # Pontuações
     gdf = calcular_pontuacao(gdf)
 
-    print(nome)
-    print(gdf.columns)
+    # Armazena a pontuação total da camada para o cálculo final dos perfis
+    p_total = pontuacao_total(gdf)
+    pontuacoes_por_camada[nome] = p_total
 
-    print(f"Quantidade de locais : {len(gdf)}")
-    print(f"Menor distância      : {menor_distancia(gdf):.2f} m")
-    print(f"Maior distância      : {maior_distancia(gdf):.2f} m")
-    print(f"Distância média      : {distancia_media(gdf):.2f} m")
+    if len(gdf) > 0:
+        print(f"Quantidade de locais : {len(gdf)}")
+        print(f"Menor distância      : {menor_distancia(gdf):.2f} m")
+        print(f"Maior distância      : {maior_distancia(gdf):.2f} m")
+        print(f"Distância média      : {distancia_media(gdf):.2f} m")
+        print(f"Pontuação total      : {p_total:.2f}")
+        print(f"Pontuação média      : {pontuacao_media(gdf):.2f}")
 
-    print()
+        print(f"\nLocais mais próximos (até {RAIO} m):")
+        proximos = ordenar_por_distancia(gdf).head(5)
+        print(proximos[["distancia", "pontuacao"]])
+    else:
+        print(f"Nenhum local encontrado dentro do raio de {RAIO} m.")
 
-    print(f"Pontuação total      : {pontuacao_total(gdf):.2f}")
-    print(f"Pontuação média      : {pontuacao_media(gdf):.2f}")
-
-    print(f"\nlocais mais próximos (até {RAIO} m de distância):")
-
-    proximos = ordenar_por_distancia(gdf).head(5)
-
-    print(
-        proximos[
-            [
-                "distancia",
-                "pontuacao"
-            ]
-        ]
-    )
-
-print("\n")
+# 4. Cálculo final e impressão dos Perfis
+print("\n" + "=" * 70)
+print("PONTUAÇÃO TOTAL POR PERFIL")
 print("=" * 70)
-print("FIM DO TESTE")
+
+perfis_pontuacao = calcular_todos_os_perfis(pontuacoes_por_camada)
+
+for perfil, pontuacao_final in perfis_pontuacao.items():
+    print(f"Perfil {perfil.capitalize():<15}: {pontuacao_final:.2f} pontos")
+
 print("=" * 70)
