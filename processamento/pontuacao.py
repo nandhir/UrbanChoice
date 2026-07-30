@@ -8,35 +8,54 @@ import geopandas as gpd
 PERFIS = {
     "idosos": {
         "hospitais": 0.30,
-        "atencao_basica_upa_ubs": 0.20,
-        "parques-municipais": 0.15,
-        "pracas-areas-verdes": 0.10,
-        "pontos-onibus-mun-intermun": 0.10,
-        "terminais-onibus": 0.05,
-        "estacoes-trem": 0.05,
-        "educacao": 0.05,
+        "atenção básica (upa e ubs)": 0.20,
+        "parques municipais": 0.15,
+        "áreas verdes": 0.10,
+        "pontos de ônibus": 0.10,
+        "terminais de ônibus": 0.05,
+        "estações de trem": 0.05,
+        "educação": 0.05,
     },
     "familias": {
-        "educacao": 0.35,
+        "educação": 0.35,
         "hospitais": 0.15,
-        "atencao_basica_upa_ubs": 0.15,
-        "parques-municipais": 0.15,
-        "pracas-areas-verdes": 0.10,
-        "pontos-onibus-mun-intermun": 0.05,
-        "estacoes-trem": 0.03,
-        "terminais-onibus": 0.02,
+        "atenção básica (upa e ubs)": 0.15,
+        "parques municipais": 0.15,
+        "áreas verdes": 0.10,
+        "pontos de ônibus": 0.05,
+        "estações de trem": 0.03,
+        "terminais de ônibus": 0.02,
     },
     "universitarios": {
-        "pontos-onibus-mun-intermun": 0.16,
-        "terminais-onibus": 0.13,
-        "estacoes-trem": 0.21,
-        "atencao_basica_upa_ubs": 0.12,
-        "parques-municipais": 0.13,
+        "pontos de ônibus": 0.16,
+        "terminais de ônibus": 0.13,
+        "estações de trem": 0.21,
+        "atenção básica (upa e ubs)": 0.12,
+        "parques municipais": 0.13,
         "hospitais": 0.10,
-        "educacao": 0.07,
-        "pracas-areas-verdes": 0.08,
+        "educação": 0.07,
+        "áreas verdes": 0.08,
+    },
+    "personalizado": {
+        "hospitais": 0.125,
+        "atenção básica (upa e ubs)": 0.125,
+        "parques municipais": 0.125,
+        "áreas verdes": 0.125,
+        "pontos de ônibus": 0.125,
+        "terminais de ônibus": 0.125,
+        "estações de trem": 0.125,
+        "educação": 0.125,
     },
 }
+
+
+def aplicar_atenuacao(pontuacao_bruta: float) -> float:
+    """Aplica penalização/divisão caso a pontuação bruta ultrapasse os limites informados."""
+    if pontuacao_bruta > 3000:
+        return pontuacao_bruta / 5.0
+    elif pontuacao_bruta > 1000:
+        return pontuacao_bruta / 2.0
+    return pontuacao_bruta
 
 
 def calcular_pontuacao(
@@ -71,17 +90,24 @@ def ordenar_por_pontuacao(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gdf.sort_values("pontuacao", ascending=False).reset_index(drop=True)
 
 
-def calcular_perfil(pontuacoes_camadas: dict, perfil: str) -> float:
-    pesos = PERFIS[perfil]
+def calcular_perfil(
+    pontuacoes_camadas: dict, perfil: str, pesos_custom: dict = None
+) -> float:
+    pesos = pesos_custom if (perfil == "personalizado" and pesos_custom) else PERFIS[perfil]
     total = 0.0
-    for camada, pontuacao in pontuacoes_camadas.items():
+    for camada, pontuacao_bruta in pontuacoes_camadas.items():
+        pontuacao_ajustada = aplicar_atenuacao(pontuacao_bruta)
         peso = pesos.get(camada, 0)
-        total += pontuacao * peso
+        total += pontuacao_ajustada * peso
     return total
 
 
-def calcular_todos_os_perfis(pontuacoes_camadas: dict) -> dict:
+def calcular_todos_os_perfis(
+    pontuacoes_camadas: dict, pesos_personalizados: dict = None
+) -> dict:
     resultado = {}
     for perfil in PERFIS:
-        resultado[perfil] = calcular_perfil(pontuacoes_camadas, perfil)
+        resultado[perfil] = calcular_perfil(
+            pontuacoes_camadas, perfil, pesos_custom=pesos_personalizados
+        )
     return resultado
