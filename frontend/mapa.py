@@ -24,6 +24,7 @@ from processamento.pontuacao import (
 )
 
 
+
 # 1. Carregamento dos dados com Cache para evitar releitura constante do disco
 @st.cache_data
 def carregar_dados_cache():
@@ -45,7 +46,7 @@ def render_mapa():
     st.set_page_config(page_title="UrbanChoice", layout="wide")
 
     st.title("🌍 UrbanChoice")
-    st.write("Clique em qualquer ponto do mapa para selecionar uma área de análise.")
+    st.write("Selecione um ponto do mapa de Santo André a ser analisado.")
 
     # Inicialização do Session State
     if "lat" not in st.session_state:
@@ -65,9 +66,9 @@ def render_mapa():
     st.session_state.raio_analise = st.sidebar.slider(
         "Raio de análise (metros)",
         min_value=500,
-        max_value=10000,
+        max_value=5000,
         value=st.session_state.raio_analise,
-        step=500,
+        step=100,
     )
 
     # Construção do Mapa
@@ -144,7 +145,7 @@ def render_mapa():
             with cols[idx]:
                 st.metric(
                     label=f"Perfil: {perfil.capitalize()}",
-                    value=f"{pontuacao:.2f} pts",
+                    value=f"{(pontuacao*(100/1300)):.2f} pontos",
                 )
 
         # Detalhamento por Camada
