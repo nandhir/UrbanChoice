@@ -71,6 +71,16 @@ def render_mapa():
     st.sidebar.write(
         "Para a análise de perfis, o valor padrão de :red[3000 metros] é recomendado."
     )
+    NOMES_EXIBICAO = {
+    "hospitais": "Hospitais",
+    "atencao_basica_upa_ubs": "Atenção Básica (UPA e UBS)",
+    "parques_municipais": "Parques Municipais",
+    "areas_verdes": "Áreas Verdes",
+    "pontos_de_onibus": "Pontos de Ônibus",
+    "terminais_de_onibus": "Terminais de Ônibus",
+    "estacoes_de_trem": "Estações de Trem",
+    "educacao": "Educação",
+}
 
     # Pesos do Perfil Personalizado na Sidebar
     st.sidebar.subheader("Perfil Personalizado")
@@ -85,6 +95,7 @@ def render_mapa():
             step=0.05,
             format="%.3f",
         )
+
 
     # Construção do Mapa
     mapa = folium.Map(
@@ -145,7 +156,6 @@ def render_mapa():
 
         st.subheader("📊 Pontuação por Perfil")
         cols = st.columns(len(perfis_pontuacao))
-
         for idx, (perfil, pontuacao) in enumerate(perfis_pontuacao.items()):
             with cols[idx]:
                 st.metric(
