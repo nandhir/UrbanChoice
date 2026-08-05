@@ -6,6 +6,7 @@ RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 if str(RAIZ_PROJETO) not in sys.path:
     sys.path.append(str(RAIZ_PROJETO))
 
+import geopandas as gpd
 import pyproj
 import streamlit as st
 import folium
@@ -27,6 +28,23 @@ from processamento.pontuacao import (
 @st.cache_data
 def carregar_dados_cache():
     return carregar_todos()
+
+
+@st.cache_data
+def carregar_limite_santo_andre():
+    """Carrega o GeoPackage de delimitação e extrai o contorno de Santo André."""
+    caminho_gpkg = RAIZ_PROJETO / "dados_limitacao" / "municipio-santo-andre.gpkg"
+
+    if caminho_gpkg.exists():
+        gdf_muns = gpd.read_file(caminho_gpkg)
+        gdf_sa = gdf_muns[gdf_muns["NM_MUN"].str.upper() == "SANTO ANDRÉ"].copy()
+
+        # Garante a conversão para WGS84 para compatibilidade com o Folium
+        if gdf_sa.crs is not None and gdf_sa.crs.to_string() != "EPSG:4326":
+            gdf_sa = gdf_sa.to_crs(epsg=4326)
+
+        return gdf_sa
+    return None
 
 
 def converter_latlon_para_utm(lat: float, lon: float) -> Point:
@@ -71,24 +89,26 @@ def render_mapa():
     st.sidebar.write(
         "Para a análise de perfis, o valor padrão de :red[3000 metros] é recomendado."
     )
-    NOMES_EXIBICAO = {
-    "hospitais": "Hospitais",
-    "atencao_basica_upa_ubs": "Atenção Básica (UPA e UBS)",
-    "parques_municipais": "Parques Municipais",
-    "areas_verdes": "Áreas Verdes",
-    "pontos_de_onibus": "Pontos de Ônibus",
-    "terminais_de_onibus": "Terminais de Ônibus",
-    "estacoes_de_trem": "Estações de Trem",
-    "educacao": "Educação",
-}
 
-    # Pesos do Perfil Personalizado na Sidebar
+    NOMES_EXIBICAO = {
+        "hospitais": "Hospitais",
+        "atencao_basica_upa_ubs": "Atenção Básica (UPA e UBS)",
+        "parques-municipais": "Parques Municipais",
+        "pracas-areas-verdes": "Áreas Verdes",
+        "pontos-onibus-mun-intermun": "Pontos de Ônibus",
+        "terminais-onibus": "Terminais de Ônibus",
+        "estacoes-trem": "Estações de Trem",
+        "educacao": "Educação",
+    }
+
+    # Pesos do Perfil Personalizado na Sidebar (com exibição padronizada)
     st.sidebar.subheader("Perfil Personalizado")
     pesos_personalizados = {}
     for camada in camadas_disponiveis:
+        nome_rotulo = NOMES_EXIBICAO.get(camada, camada)
         valor_padrao = PERFIS["personalizado"].get(camada, 0.10)
         pesos_personalizados[camada] = st.sidebar.number_input(
-            f"{camada}",
+            f"{nome_rotulo}",
             min_value=0.0,
             max_value=1.0,
             value=float(valor_padrao),
@@ -96,11 +116,26 @@ def render_mapa():
             format="%.3f",
         )
 
-
     # Construção do Mapa
     mapa = folium.Map(
-        location=[st.session_state.lat, st.session_state.lon], zoom_start=13
+        location=[st.session_state.lat, st.session_state.lon], zoom_start=12
     )
+
+    # Renderiza o limite municipal de Santo André se disponível
+    gdf_sa = carregar_limite_santo_andre()
+    if gdf_sa is not None and not gdf_sa.empty:
+        folium.GeoJson(
+            gdf_sa,
+            name="Delimitação de Santo André",
+            style_function=lambda feature: {
+                "fillColor": "#3186cc",
+                "color": "#1c3d5a",
+                "weight": 3,
+                "fillOpacity": 0.2,
+            },
+            tooltip="Município de Santo André",
+        ).add_to(mapa)
+
     folium.Marker(
         [st.session_state.lat, st.session_state.lon], tooltip="Ponto selecionado"
     ).add_to(mapa)
